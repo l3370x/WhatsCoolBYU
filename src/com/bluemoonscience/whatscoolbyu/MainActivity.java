@@ -223,7 +223,6 @@ public class MainActivity extends FragmentActivity {
 			mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
 					image_details);
 			dummyListView.setAdapter(mAdapter);
-
 			// Gets the user's network preference settings
 			SharedPreferences sharedPrefs = PreferenceManager
 					.getDefaultSharedPreferences(getActivity().getApplicationContext());
