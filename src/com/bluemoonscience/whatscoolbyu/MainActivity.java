@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
@@ -27,6 +28,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -36,6 +38,7 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -93,8 +96,8 @@ public class MainActivity extends FragmentActivity {
 		// Create the adapter that will return a fragment for each of the three
 		// primary sections of the app.
 		mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-		Toast.makeText(this.getBaseContext(), "on create",
-				Toast.LENGTH_SHORT).show();
+
+		Toast.makeText(this.getApplicationContext(), "on create", Toast.LENGTH_SHORT).show();
 
 		// Set up the ViewPager with the sections adapter.
 		mViewPager = (ViewPager) findViewById(R.id.pager);
@@ -126,7 +129,7 @@ public class MainActivity extends FragmentActivity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 		case R.id.settings:
-			Intent settingsActivity = new Intent(getBaseContext(), SettingsActivity.class);
+			Intent settingsActivity = new Intent(getApplicationContext(), SettingsActivity.class);
 			startActivity(settingsActivity);
 			return true;
 		case R.id.refresh:
@@ -202,7 +205,10 @@ public class MainActivity extends FragmentActivity {
 		 * fragment.
 		 */
 		public static final String ARG_SECTION_NUMBER = "section_number";
-		private TextView dummyTextView;
+		private ListView dummyListView;
+		private TextView dummyEmptyTextView;
+		ArrayList<ItemDetails> image_details = new ArrayList<ItemDetails>();
+		ItemListBaseAdapter mAdapter;
 
 		public DummySectionFragment() {
 		}
@@ -211,12 +217,16 @@ public class MainActivity extends FragmentActivity {
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_main_dummy, container, false);
-			dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
-			dummyTextView.setText("Refresh to see entries.");
+			dummyListView = (ListView) rootView.findViewById(R.id.dummyList);
+			dummyEmptyTextView = (TextView) rootView.findViewById(R.id.dummyEmptyTextView);
+			dummyListView.setEmptyView(rootView.findViewById(R.id.relLayoutEmpty));
+			mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
+					image_details);
+			dummyListView.setAdapter(mAdapter);
 
 			// Gets the user's network preference settings
 			SharedPreferences sharedPrefs = PreferenceManager
-					.getDefaultSharedPreferences(getActivity().getBaseContext());
+					.getDefaultSharedPreferences(getActivity().getApplicationContext());
 
 			// Retrieves a string value for the preferences. The second
 			// parameter
@@ -236,7 +246,7 @@ public class MainActivity extends FragmentActivity {
 
 			// Gets the user's network preference settings
 			SharedPreferences sharedPrefs = PreferenceManager
-					.getDefaultSharedPreferences(getActivity().getBaseContext());
+					.getDefaultSharedPreferences(getActivity().getApplicationContext());
 
 			// Retrieves a string value for the preferences. The second
 			// parameter
@@ -266,8 +276,8 @@ public class MainActivity extends FragmentActivity {
 		// mobileConnected
 		// variables accordingly.
 		private void updateConnectedFlags() {
-			ConnectivityManager connMgr = (ConnectivityManager) getActivity().getBaseContext()
-					.getSystemService(Context.CONNECTIVITY_SERVICE);
+			ConnectivityManager connMgr = (ConnectivityManager) getActivity()
+					.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
 
 			NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
 			if (activeInfo != null && activeInfo.isConnected()) {
@@ -295,12 +305,14 @@ public class MainActivity extends FragmentActivity {
 		// perform
 		// network operations on a separate thread from the UI.
 		public void loadPage() {
-			Toast.makeText(getActivity().getBaseContext(), "loadPage", Toast.LENGTH_SHORT).show();
+			Toast.makeText(getActivity().getApplicationContext(), "loadPage", Toast.LENGTH_SHORT)
+					.show();
 			if (((sPref.equals(ANY)) && (wifiConnected || mobileConnected))
 					|| ((sPref.equals(WIFI)) && (wifiConnected))) {
 				// AsyncTask subclass
+				Log.d("loadPage", "just before executing(URL)");
 				new DownloadXmlTask().execute(URL);
-				// dummyTextView.setText("Success!");
+				dummyEmptyTextView.setText("Success!");
 			} else {
 				showErrorPage();
 			}
@@ -308,7 +320,7 @@ public class MainActivity extends FragmentActivity {
 
 		// Displays an error if the app is unable to load content.
 		private void showErrorPage() {
-			dummyTextView.setText(getResources().getString(R.string.connection_error));
+			dummyEmptyTextView.setText(getResources().getString(R.string.connection_error));
 		}
 
 		// Implementation of AsyncTask used to download XML feed from
@@ -318,6 +330,7 @@ public class MainActivity extends FragmentActivity {
 			@Override
 			protected String doInBackground(String... urls) {
 				try {
+					Log.d("downloadXMLTask", "starting loadXmlFromNetwork");
 					return loadXmlFromNetwork(urls[0]);
 				} catch (IOException e) {
 					return getResources().getString(R.string.connection_error);
@@ -328,7 +341,9 @@ public class MainActivity extends FragmentActivity {
 
 			@Override
 			protected void onPostExecute(String result) {
-				dummyTextView.setText(result);
+				// dummyEmptyTextView.setText(result);
+				// dummyListView.getAdapter().notify();
+				mAdapter.notifyDataSetChanged();
 			}
 		}
 
@@ -348,14 +363,17 @@ public class MainActivity extends FragmentActivity {
 			// Checks whether the user set the preference to include summary
 			// text
 			SharedPreferences sharedPrefs = PreferenceManager
-					.getDefaultSharedPreferences(getActivity().getBaseContext());
+					.getDefaultSharedPreferences(getActivity().getApplicationContext());
 			boolean pref = sharedPrefs.getBoolean("summaryPref", false);
 
 			StringBuilder htmlString = new StringBuilder();
 
 			try {
+				Log.d("laodXML", "before downloadURL");
 				stream = downloadUrl(urlString);
+				Log.d("laodXML", "before parse");
 				entries = stackOverflowXmlParser.parse(stream);
+				Log.d("laodXML", "after parse");
 				// Makes sure that the InputStream is closed after the app is
 				// finished using it.
 			} finally {
@@ -363,6 +381,7 @@ public class MainActivity extends FragmentActivity {
 					stream.close();
 				}
 			}
+			Log.d("loadXML", "number of entries = " + Integer.toString(entries.size()));
 
 			// StackOverflowXmlParser returns a List (called "entries") of Entry
 			// objects.
@@ -373,6 +392,16 @@ public class MainActivity extends FragmentActivity {
 			// includes
 			// a text summary.
 			for (Entry entry : entries) {
+
+				ItemDetails newItem = new ItemDetails();
+				newItem.setName(entry.message);
+				newItem.setItemDescription(entry.message);
+				newItem.setImageNumber(1);
+				newItem.setPrice(entry.timestamp);
+				image_details.add(newItem);
+
+				Log.d("Entry Added", entry.message);
+
 				htmlString.append(entry.timestamp + "\n");
 				htmlString.append(entry.message + "\n");
 				// If the user set the preference to include summary text,

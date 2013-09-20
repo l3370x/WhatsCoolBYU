@@ -72,7 +72,7 @@ public class StackOverflowXmlParser {
         public final String pictureURL;
         public final String timestamp;
 
-        private Entry(String message, String timestamp, String pictureURL) {
+        public Entry(String message, String timestamp, String pictureURL) {
             this.message = message;
             this.timestamp = timestamp;
             this.pictureURL = pictureURL;
@@ -94,8 +94,8 @@ public class StackOverflowXmlParser {
             String name = parser.getName();
             if (name.equals("timestamp")) {
                 title = readTimestamp(parser);
-            } else if (name.equals("message")) {
-                summary = readMessage(parser);
+            } else if (name.equals("title")) {
+                summary = readTitle(parser);
             } else if (name.equals("picurl")) {
                 link = readPictureURL(parser);
             } else {
@@ -123,10 +123,10 @@ public class StackOverflowXmlParser {
     }
 
     // Processes summary tags in the feed.
-    private String readMessage(XmlPullParser parser) throws IOException, XmlPullParserException {
-        parser.require(XmlPullParser.START_TAG, ns, "message");
+    private String readTitle(XmlPullParser parser) throws IOException, XmlPullParserException {
+        parser.require(XmlPullParser.START_TAG, ns, "title");
         String summary = readText(parser);
-        parser.require(XmlPullParser.END_TAG, ns, "message");
+        parser.require(XmlPullParser.END_TAG, ns, "title");
         return summary;
     }
 
