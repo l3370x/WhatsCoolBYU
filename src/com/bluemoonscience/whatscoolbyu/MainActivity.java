@@ -1,8 +1,27 @@
 package com.bluemoonscience.whatscoolbyu;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.List;
 import java.util.Locale;
 
+import org.xmlpull.v1.XmlPullParserException;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
@@ -10,13 +29,17 @@ import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.bluemoonscience.whatscoolbyu.StackOverflowXmlParser.Entry;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -39,28 +62,80 @@ public class MainActivity extends FragmentActivity {
 	 */
 	ViewPager mViewPager;
 
+	// Network globals
+	public static final String WIFI = "Wi-Fi";
+	public static final String ANY = "Any";
+	private static final String URL = "http://aaronapps.bluemoonscience.com/get.php";
+
+	// Whether there is a Wi-Fi connection.
+	private static boolean wifiConnected = false;
+	// Whether there is a mobile connection.
+	private static boolean mobileConnected = false;
+	// Whether the display should be refreshed.
+	public static boolean refreshDisplay = true;
+
+	// The user's current network preference setting.
+	public static String sPref = null;
+
+	// The BroadcastReceiver that tracks network connectivity changes.
+	private NetworkReceiver receiver = new NetworkReceiver();
+
+	// END Network globals
+
+	DummySectionFragment dummyFrag;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.activity_main);
-		
 
 		// Create the adapter that will return a fragment for each of the three
 		// primary sections of the app.
 		mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+		Toast.makeText(this.getBaseContext(), "on create",
+				Toast.LENGTH_SHORT).show();
 
 		// Set up the ViewPager with the sections adapter.
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mViewPager.setAdapter(mSectionsPagerAdapter);
 
+		IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+		receiver = new NetworkReceiver();
+		this.registerReceiver(receiver, filter);
 	}
 
 	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		if (receiver != null) {
+			this.unregisterReceiver(receiver);
+		}
+	}
+
+	// Populates the activity's options menu.
+	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.main, menu);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.mainmenu, menu);
 		return true;
+	}
+
+	// Handles the user's menu selection.
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.settings:
+			Intent settingsActivity = new Intent(getBaseContext(), SettingsActivity.class);
+			startActivity(settingsActivity);
+			return true;
+		case R.id.refresh:
+			if (dummyFrag != null)
+				dummyFrag.loadPage();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 
 	/**
@@ -91,6 +166,7 @@ public class MainActivity extends FragmentActivity {
 			Bundle args = new Bundle();
 			args.putInt(DummySectionFragment.ARG_SECTION_NUMBER, position + 1);
 			fragment.setArguments(args);
+			dummyFrag = (DummySectionFragment) fragment;
 			return fragment;
 
 		}
@@ -126,6 +202,7 @@ public class MainActivity extends FragmentActivity {
 		 * fragment.
 		 */
 		public static final String ARG_SECTION_NUMBER = "section_number";
+		private TextView dummyTextView;
 
 		public DummySectionFragment() {
 		}
@@ -134,10 +211,195 @@ public class MainActivity extends FragmentActivity {
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_main_dummy, container, false);
-			TextView dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
-			dummyTextView.setText(Integer.toString(getArguments().getInt(ARG_SECTION_NUMBER)));
+			dummyTextView = (TextView) rootView.findViewById(R.id.section_label);
+			dummyTextView.setText("Refresh to see entries.");
+
+			// Gets the user's network preference settings
+			SharedPreferences sharedPrefs = PreferenceManager
+					.getDefaultSharedPreferences(getActivity().getBaseContext());
+
+			// Retrieves a string value for the preferences. The second
+			// parameter
+			// is the default value to use if a preference value is not found.
+			sPref = sharedPrefs.getString("listPref", "Wi-Fi");
+
+			updateConnectedFlags();
+
 			return rootView;
 		}
+
+		// Refreshes the display if the network connection and the
+		// pref settings allow it.
+		@Override
+		public void onStart() {
+			super.onStart();
+
+			// Gets the user's network preference settings
+			SharedPreferences sharedPrefs = PreferenceManager
+					.getDefaultSharedPreferences(getActivity().getBaseContext());
+
+			// Retrieves a string value for the preferences. The second
+			// parameter
+			// is the default value to use if a preference value is not found.
+			sPref = sharedPrefs.getString("listPref", "Wi-Fi");
+
+			updateConnectedFlags();
+
+			// Only loads the page if refreshDisplay is true. Otherwise, keeps
+			// previous
+			// display. For example, if the user has set "Wi-Fi only" in prefs
+			// and
+			// the
+			// device loses its Wi-Fi connection midway through the user using
+			// the
+			// app,
+			// you don't want to refresh the display--this would force the
+			// display
+			// of
+			// an error page instead of stackoverflow.com content.
+			if (refreshDisplay) {
+				loadPage();
+			}
+		}
+
+		// Checks the network connection and sets the wifiConnected and
+		// mobileConnected
+		// variables accordingly.
+		private void updateConnectedFlags() {
+			ConnectivityManager connMgr = (ConnectivityManager) getActivity().getBaseContext()
+					.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+			NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
+			if (activeInfo != null && activeInfo.isConnected()) {
+				wifiConnected = activeInfo.getType() == ConnectivityManager.TYPE_WIFI;
+				mobileConnected = activeInfo.getType() == ConnectivityManager.TYPE_MOBILE;
+			} else {
+				wifiConnected = false;
+				mobileConnected = false;
+			}
+
+			if (WIFI.equals(sPref) && wifiConnected == false) {
+				refreshDisplay = true;
+			} else if (ANY.equals(sPref) && (wifiConnected == true | mobileConnected == true)) {
+				refreshDisplay = true;
+			} else {
+				refreshDisplay = false;
+			}
+
+		}
+
+		// Uses AsyncTask subclass to download the XML feed from
+		// stackoverflow.com.
+		// This avoids UI lock up. To prevent network operations from
+		// causing a delay that results in a poor user experience, always
+		// perform
+		// network operations on a separate thread from the UI.
+		public void loadPage() {
+			Toast.makeText(getActivity().getBaseContext(), "loadPage", Toast.LENGTH_SHORT).show();
+			if (((sPref.equals(ANY)) && (wifiConnected || mobileConnected))
+					|| ((sPref.equals(WIFI)) && (wifiConnected))) {
+				// AsyncTask subclass
+				new DownloadXmlTask().execute(URL);
+				// dummyTextView.setText("Success!");
+			} else {
+				showErrorPage();
+			}
+		}
+
+		// Displays an error if the app is unable to load content.
+		private void showErrorPage() {
+			dummyTextView.setText(getResources().getString(R.string.connection_error));
+		}
+
+		// Implementation of AsyncTask used to download XML feed from
+		// stackoverflow.com.
+		private class DownloadXmlTask extends AsyncTask<String, Void, String> {
+
+			@Override
+			protected String doInBackground(String... urls) {
+				try {
+					return loadXmlFromNetwork(urls[0]);
+				} catch (IOException e) {
+					return getResources().getString(R.string.connection_error);
+				} catch (XmlPullParserException e) {
+					return getResources().getString(R.string.xml_error);
+				}
+			}
+
+			@Override
+			protected void onPostExecute(String result) {
+				dummyTextView.setText(result);
+			}
+		}
+
+		// Uploads XML from stackoverflow.com, parses it, and combines it with
+		// HTML markup. Returns HTML string.
+		private String loadXmlFromNetwork(String urlString) throws XmlPullParserException,
+				IOException {
+			InputStream stream = null;
+			StackOverflowXmlParser stackOverflowXmlParser = new StackOverflowXmlParser();
+			List<Entry> entries = null;
+			String title = null;
+			String url = null;
+			String summary = null;
+			Calendar rightNow = Calendar.getInstance();
+			DateFormat formatter = new SimpleDateFormat("MMM dd h:mmaa");
+
+			// Checks whether the user set the preference to include summary
+			// text
+			SharedPreferences sharedPrefs = PreferenceManager
+					.getDefaultSharedPreferences(getActivity().getBaseContext());
+			boolean pref = sharedPrefs.getBoolean("summaryPref", false);
+
+			StringBuilder htmlString = new StringBuilder();
+
+			try {
+				stream = downloadUrl(urlString);
+				entries = stackOverflowXmlParser.parse(stream);
+				// Makes sure that the InputStream is closed after the app is
+				// finished using it.
+			} finally {
+				if (stream != null) {
+					stream.close();
+				}
+			}
+
+			// StackOverflowXmlParser returns a List (called "entries") of Entry
+			// objects.
+			// Each Entry object represents a single post in the XML feed.
+			// This section processes the entries list to combine each entry
+			// with HTML markup.
+			// Each entry is displayed in the UI as a link that optionally
+			// includes
+			// a text summary.
+			for (Entry entry : entries) {
+				htmlString.append(entry.timestamp + "\n");
+				htmlString.append(entry.message + "\n");
+				// If the user set the preference to include summary text,
+				// adds it to the display.
+				if (pref) {
+					htmlString.append(entry.pictureURL);
+				}
+				htmlString.append("\n\n");
+			}
+			return htmlString.toString();
+		}
+
+		// Given a string representation of a URL, sets up a connection and gets
+		// an input stream.
+		private InputStream downloadUrl(String urlString) throws IOException {
+			URL url = new URL(urlString);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			conn.setReadTimeout(10000 /* milliseconds */);
+			conn.setConnectTimeout(15000 /* milliseconds */);
+			conn.setRequestMethod("GET");
+			conn.setDoInput(true);
+			// Starts the query
+			conn.connect();
+			InputStream stream = conn.getInputStream();
+			return stream;
+		}
+
 	}
 
 	/**
@@ -156,11 +418,12 @@ public class MainActivity extends FragmentActivity {
 				Bundle savedInstanceState) {
 			View rootView = inflater.inflate(R.layout.fragment_main_map, container, false);
 			map = ((SupportMapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
-			//Marker byuMarker = map.addMarker(new MarkerOptions().position(BYULatLng).title("BYU"));
-			
+			// Marker byuMarker = map.addMarker(new
+			// MarkerOptions().position(BYULatLng).title("BYU"));
+
 			// Enable my location
 			map.setMyLocationEnabled(true);
-			
+
 			// Move the camera instantly to BYU with a zoom of 12.
 			map.moveCamera(CameraUpdateFactory.newLatLngZoom(BYULatLng, 12));
 
@@ -189,6 +452,58 @@ public class MainActivity extends FragmentActivity {
 
 			listview.setAdapter(files);
 			return rootView;
+		}
+	}
+
+	/**
+	 * 
+	 * This BroadcastReceiver intercepts the
+	 * android.net.ConnectivityManager.CONNECTIVITY_ACTION, which indicates a
+	 * connection change. It checks whether the type is TYPE_WIFI. If it is, it
+	 * checks whether Wi-Fi is connected and sets the wifiConnected flag in the
+	 * main activity accordingly.
+	 * 
+	 */
+	public class NetworkReceiver extends BroadcastReceiver {
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			ConnectivityManager connMgr = (ConnectivityManager) context
+					.getSystemService(Context.CONNECTIVITY_SERVICE);
+			NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+
+			// Checks the user prefs and the network connection. Based on the
+			// result, decides
+			// whether
+			// to refresh the display or keep the current display.
+			// If the userpref is Wi-Fi only, checks to see if the device has a
+			// Wi-Fi connection.
+			if (WIFI.equals(sPref) && networkInfo != null
+					&& networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
+				// If device has its Wi-Fi connection, sets refreshDisplay
+				// to true. This causes the display to be refreshed when the
+				// user
+				// returns to the app.
+				refreshDisplay = true;
+				Toast.makeText(context, R.string.wifi_connected, Toast.LENGTH_SHORT).show();
+
+				// If the setting is ANY network and there is a network
+				// connection
+				// (which by process of elimination would be mobile), sets
+				// refreshDisplay to true.
+			} else if (ANY.equals(sPref) && networkInfo != null) {
+				refreshDisplay = true;
+
+				// Otherwise, the app can't download content--either because
+				// there is no network
+				// connection (mobile or Wi-Fi), or because the pref setting is
+				// WIFI, and there
+				// is no Wi-Fi connection.
+				// Sets refreshDisplay to false.
+			} else {
+				refreshDisplay = false;
+				Toast.makeText(context, R.string.lost_connection, Toast.LENGTH_SHORT).show();
+			}
 		}
 	}
 
