@@ -9,6 +9,7 @@
     <!--  Menu items -->
     <string name="action_settings">Settings</string>
     <string name="refresh">Refresh</string>
+    <string name="save">Save</string>
 
     <!--  NetworkActivity -->
     <string name="page_title">Newest BYU Date Ideas</string>

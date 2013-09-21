@@ -93,7 +93,6 @@ public class MainActivity extends FragmentActivity {
 		Log.d("main", "onCreate");
 		// this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.activity_main);
-
 		// Create the adapter that will return a fragment for each of the three
 		// primary sections of the app.
 		// if (savedInstanceState == null)
@@ -173,7 +172,7 @@ public class MainActivity extends FragmentActivity {
 			// Return a DummySectionFragment (defined as a static inner class
 			// below) with the page number as its lone argument.
 			if (position == 2) {
-				Fragment fragment = new ListSectionFragment();
+				Fragment fragment = new NewDateSectionFragment();
 				return fragment;
 
 			}
@@ -231,7 +230,6 @@ public class MainActivity extends FragmentActivity {
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
 			Log.d("dummy", "onCreateView & refreshDisplay = " + refreshDisplay);
-
 			setRetainInstance(true);
 			View rootView = inflater.inflate(R.layout.fragment_main_dummy, container, false);
 			dummyListView = (ListView) rootView.findViewById(R.id.dummyList);
@@ -239,10 +237,10 @@ public class MainActivity extends FragmentActivity {
 			dummyEmptyProgressBar = (ProgressBar) rootView.findViewById(R.id.progressBar1);
 			dummyListView.setEmptyView(rootView.findViewById(R.id.relLayoutEmpty));
 			fillData();
-//			if (mAdapter == null)
-//				mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
-//						image_details);
-//			dummyListView.setAdapter(mAdapter);
+			// if (mAdapter == null)
+			// mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
+			// image_details);
+			// dummyListView.setAdapter(mAdapter);
 
 			Log.d("dummy", "onCreateView & dummyAdapter = "
 					+ dummyListView.getAdapter().toString());
@@ -250,9 +248,32 @@ public class MainActivity extends FragmentActivity {
 		}
 
 		@Override
+		public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+			super.onCreateOptionsMenu(menu, inflater);
+			inflater.inflate(R.menu.list_menu, menu);
+		}
+
+		@Override
+		public boolean onOptionsItemSelected(MenuItem item) {
+			// handle item selection
+			switch (item.getItemId()) {
+			case R.id.list_refresh_menuitem:
+				if (this != null) {
+					loadPage();
+				} else {
+					Log.d("main", "button pushed & dummyFrag == null");
+				}
+				return true;
+			default:
+				return super.onOptionsItemSelected(item);
+			}
+		}
+
+		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
 			super.onActivityCreated(savedInstanceState);
 			((MainActivity) getActivity()).dummyFrag = this;
+			setHasOptionsMenu(true);
 		}
 
 		// Refreshes the display if the network connection and the
@@ -297,15 +318,15 @@ public class MainActivity extends FragmentActivity {
 		public void loadPage() {
 			Log.d("dummy", "loadPage & refreshDisplay = " + refreshDisplay);
 			return;
-//			if (((sPref.equals(ANY)) && (wifiConnected || mobileConnected))
-//					|| ((sPref.equals(WIFI)) && (wifiConnected))) {
-//				// AsyncTask subclass
-//				Log.d("loadPage", "just before executing(URL)");
-//				new DownloadXmlTask().execute(URL);
-//				dummyEmptyTextView.setText("Success!");
-//			} else {
-//				showErrorPage();
-//			}
+			// if (((sPref.equals(ANY)) && (wifiConnected || mobileConnected))
+			// || ((sPref.equals(WIFI)) && (wifiConnected))) {
+			// // AsyncTask subclass
+			// Log.d("loadPage", "just before executing(URL)");
+			// new DownloadXmlTask().execute(URL);
+			// dummyEmptyTextView.setText("Success!");
+			// } else {
+			// showErrorPage();
+			// }
 		}
 
 		// Displays an error if the app is unable to load content.
@@ -405,7 +426,7 @@ public class MainActivity extends FragmentActivity {
 		// Creates a new loader after the initLoader () call
 		@Override
 		public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-			Log.d("dummy","onCreateLoader");
+			Log.d("dummy", "onCreateLoader");
 			String[] projection = { ByuTable.COLUMN_ID, ByuTable.COLUMN_SDESCRIPTION,
 					ByuTable.COLUMN_TITLE, ByuTable.COLUMN_TIMESTAMP };
 			CursorLoader cursorLoader = new CursorLoader(getActivity().getApplicationContext(),
@@ -414,9 +435,10 @@ public class MainActivity extends FragmentActivity {
 		}
 
 		private void createByu() {
-			Log.d("dummy","createByu");
-//			Intent i = new Intent(getActivity().getApplicationContext(), ByuDetailActivity.class);
-//			startActivity(i);
+			Log.d("dummy", "createByu");
+			// Intent i = new Intent(getActivity().getApplicationContext(),
+			// ByuDetailActivity.class);
+			// startActivity(i);
 		}
 
 		// Opens the second activity if an entry is clicked
@@ -431,7 +453,7 @@ public class MainActivity extends FragmentActivity {
 		// }
 
 		private void fillData() {
-			Log.d("dummy","fillData");
+			Log.d("dummy", "fillData");
 			// Fields from the database (projection)
 			// Must include the _id column for the adapter to work
 			String[] from = new String[] { ByuTable.COLUMN_TITLE, ByuTable.COLUMN_SDESCRIPTION };
@@ -447,13 +469,13 @@ public class MainActivity extends FragmentActivity {
 
 		@Override
 		public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
-			Log.d("dummy","onLoadFinished");
+			Log.d("dummy", "onLoadFinished");
 			adapter.swapCursor(data);
 		}
 
 		@Override
 		public void onLoaderReset(Loader<Cursor> loader) {
-			Log.d("dummy","onLoaderReset");
+			Log.d("dummy", "onLoaderReset");
 			// data is not available anymore, delete reference
 			adapter.swapCursor(null);
 		}
@@ -492,26 +514,38 @@ public class MainActivity extends FragmentActivity {
 	/**
 	 * The List Fragment
 	 */
-	public static class ListSectionFragment extends Fragment {
+	public static class NewDateSectionFragment extends Fragment {
 
-		public ListSectionFragment() {
+		public NewDateSectionFragment() {
 		}
 
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
 			setRetainInstance(true);
-			View rootView = inflater.inflate(R.layout.fragment_main_list, container, false);
-			ListView listview = (ListView) rootView.findViewById(R.id.listView1);
-			String[] values = new String[] { "Android", "iPhone", "WindowsMobile", "Blackberry",
-					"WebOS", "Ubuntu", "Windows7", "Max OS X", "Linux", "OS/2", "1", "2", "3", "4" };
+			View rootView = inflater.inflate(R.layout.fragment_main_newdate, container, false);
+			setHasOptionsMenu(true);
 
-			ArrayAdapter<String> files = new ArrayAdapter<String>(getActivity(),
-					android.R.layout.simple_list_item_1, values);
-
-			listview.setAdapter(files);
 			return rootView;
 		}
+
+		@Override
+		public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+			inflater.inflate(R.menu.newd_menu, menu);
+		}
+
+		@Override
+		public boolean onOptionsItemSelected(MenuItem item) {
+			// handle item selection
+			switch (item.getItemId()) {
+			case R.id.newd_save:
+				Log.d("newd", "save");
+				return true;
+			default:
+				return super.onOptionsItemSelected(item);
+			}
+		}
+
 	}
 
 	/**
