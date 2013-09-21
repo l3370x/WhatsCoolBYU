@@ -65,19 +65,6 @@ public class StackOverflowXmlParser {
         return entries;
     }
 
-    // This class represents a single entry (post) in the XML feed.
-    // It includes the data members "title," "link," and "summary."
-    public static class Entry {
-        public final String message;
-        public final String pictureURL;
-        public final String timestamp;
-
-        public Entry(String message, String timestamp, String pictureURL) {
-            this.message = message;
-            this.timestamp = timestamp;
-            this.pictureURL = pictureURL;
-        }
-    }
 
     // Parses the contents of an entry. If it encounters a title, summary, or link tag, hands them
     // off

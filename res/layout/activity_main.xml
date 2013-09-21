@@ -1,3 +1,8 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    
 <android.support.v4.view.ViewPager xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/pager"
@@ -13,11 +18,25 @@
     <android.support.v4.view.PagerTitleStrip
         android:id="@+id/pager_title_strip"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="48dp"
         android:layout_gravity="top"
         android:background="#003076"
         android:paddingBottom="15dp"
+        android:paddingRight="50dp"
         android:paddingTop="10dp"
         android:textColor="#fff" />
 
 </android.support.v4.view.ViewPager>
+
+<Button
+    android:id="@+id/buttonRefresh"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignParentRight="true"
+    android:layout_alignParentTop="true"
+    android:alpha="1"
+    android:background="@drawable/ic_refresh"
+    android:maxWidth="100dp"
+    android:minWidth="48dp" />
+
+</RelativeLayout>

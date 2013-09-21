@@ -4,10 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Locale;
 
@@ -37,12 +34,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bluemoonscience.whatscoolbyu.StackOverflowXmlParser.Entry;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
@@ -84,18 +80,19 @@ public class MainActivity extends FragmentActivity {
 	// END Network globals
 
 	DummySectionFragment dummyFrag;
+	public Button dummyRefreshButton;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d("main", "onCreate");
 		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.activity_main);
 
 		// Create the adapter that will return a fragment for each of the three
 		// primary sections of the app.
+		// if (savedInstanceState == null)
 		mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-		Toast.makeText(this.getApplicationContext(), "on create", Toast.LENGTH_SHORT).show();
 
 		// Set up the ViewPager with the sections adapter.
 		mViewPager = (ViewPager) findViewById(R.id.pager);
@@ -104,6 +101,24 @@ public class MainActivity extends FragmentActivity {
 		IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
 		receiver = new NetworkReceiver();
 		this.registerReceiver(receiver, filter);
+
+		dummyRefreshButton = (Button) this.findViewById(R.id.buttonRefresh);
+		dummyRefreshButton.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				Log.d("refresh button", "pushed");// & dummyFrag = " + dummyFrag.toString());
+				if (dummyFrag != null) {
+					dummyFrag.loadPage();
+				} else {
+					Log.d("main","button pushed & dummyFrag == null");
+				}
+			}
+		});
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
+		Log.d("main", "onSaveInstanceState");
 	}
 
 	@Override
@@ -131,8 +146,11 @@ public class MainActivity extends FragmentActivity {
 			startActivity(settingsActivity);
 			return true;
 		case R.id.refresh:
-			if (dummyFrag != null)
+			if (dummyFrag != null) {
 				dummyFrag.loadPage();
+			} else {
+				Log.d("main","button pushed & dummyFrag == null");
+			}
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
@@ -151,6 +169,7 @@ public class MainActivity extends FragmentActivity {
 
 		@Override
 		public Fragment getItem(int position) {
+			Log.d("main","getItem");
 			// getItem is called to instantiate the fragment for the given page.
 			// Return a DummySectionFragment (defined as a static inner class
 			// below) with the page number as its lone argument.
@@ -164,9 +183,6 @@ public class MainActivity extends FragmentActivity {
 				return fragment;
 			}
 			Fragment fragment = new DummySectionFragment();
-			Bundle args = new Bundle();
-			args.putInt(DummySectionFragment.ARG_SECTION_NUMBER, position + 1);
-			fragment.setArguments(args);
 			dummyFrag = (DummySectionFragment) fragment;
 			return fragment;
 
@@ -203,7 +219,7 @@ public class MainActivity extends FragmentActivity {
 		public static final String ARG_SECTION_NUMBER = "section_number";
 		private ListView dummyListView;
 		private TextView dummyEmptyTextView;
-		ArrayList<ItemDetails> image_details = new ArrayList<ItemDetails>();
+		ArrayList<Entry> image_details = new ArrayList<Entry>();
 		ItemListBaseAdapter mAdapter;
 
 		public DummySectionFragment() {
@@ -212,12 +228,16 @@ public class MainActivity extends FragmentActivity {
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
+			Log.d("dummy", "onCreateView & refreshDisplay = " + refreshDisplay);
+
+			setRetainInstance(true);
 			View rootView = inflater.inflate(R.layout.fragment_main_dummy, container, false);
 			dummyListView = (ListView) rootView.findViewById(R.id.dummyList);
 			dummyEmptyTextView = (TextView) rootView.findViewById(R.id.dummyEmptyTextView);
 			dummyListView.setEmptyView(rootView.findViewById(R.id.relLayoutEmpty));
-			mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
-					image_details);
+			if (mAdapter == null)
+				mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
+						image_details);
 			dummyListView.setAdapter(mAdapter);
 			// Gets the user's network preference settings
 			SharedPreferences sharedPrefs = PreferenceManager
@@ -227,10 +247,15 @@ public class MainActivity extends FragmentActivity {
 			// parameter
 			// is the default value to use if a preference value is not found.
 			sPref = sharedPrefs.getString("listPref", "Wi-Fi");
-
-			updateConnectedFlags();
-
+			Log.d("dummy", "onCreateView & dummyAdapter = "
+					+ dummyListView.getAdapter().toString());
 			return rootView;
+		}
+		
+		@Override
+		public void onActivityCreated(Bundle savedInstanceState){
+			super.onActivityCreated(savedInstanceState);
+			((MainActivity)getActivity()).dummyFrag = this;
 		}
 
 		// Refreshes the display if the network connection and the
@@ -238,6 +263,7 @@ public class MainActivity extends FragmentActivity {
 		@Override
 		public void onStart() {
 			super.onStart();
+			Log.d("dummy", "onStart & refreshDisplay = " + refreshDisplay);
 
 			// Gets the user's network preference settings
 			SharedPreferences sharedPrefs = PreferenceManager
@@ -255,7 +281,9 @@ public class MainActivity extends FragmentActivity {
 			// device loses its Wi-Fi connection midway through the user using the app,
 			// you don't want to refresh the display--this would force the display of
 			// an error page instead of stackoverflow.com content.
+			Log.d("dummy", "onStart beforeIF & refreshDisplay = " + refreshDisplay);
 			if (refreshDisplay) {
+				Log.d("onStart", "will loadPage()");
 				loadPage();
 			}
 		}
@@ -275,15 +303,6 @@ public class MainActivity extends FragmentActivity {
 				wifiConnected = false;
 				mobileConnected = false;
 			}
-
-			if (WIFI.equals(sPref) && wifiConnected == false) {
-				refreshDisplay = true;
-			} else if (ANY.equals(sPref) && (wifiConnected == true | mobileConnected == true)) {
-				refreshDisplay = true;
-			} else {
-				refreshDisplay = false;
-			}
-
 		}
 
 		// Uses AsyncTask subclass to download the XML feed from
@@ -293,8 +312,7 @@ public class MainActivity extends FragmentActivity {
 		// perform
 		// network operations on a separate thread from the UI.
 		public void loadPage() {
-			Toast.makeText(getActivity().getApplicationContext(), "loadPage", Toast.LENGTH_SHORT)
-					.show();
+			Log.d("dummy", "loadPage & refreshDisplay = " + refreshDisplay);
 			if (((sPref.equals(ANY)) && (wifiConnected || mobileConnected))
 					|| ((sPref.equals(WIFI)) && (wifiConnected))) {
 				// AsyncTask subclass
@@ -342,11 +360,6 @@ public class MainActivity extends FragmentActivity {
 			InputStream stream = null;
 			StackOverflowXmlParser stackOverflowXmlParser = new StackOverflowXmlParser();
 			List<Entry> entries = null;
-			String title = null;
-			String url = null;
-			String summary = null;
-			Calendar rightNow = Calendar.getInstance();
-			DateFormat formatter = new SimpleDateFormat("MMM dd h:mmaa");
 
 			// Checks whether the user set the preference to include summary
 			// text
@@ -381,17 +394,13 @@ public class MainActivity extends FragmentActivity {
 			// a text summary.
 			for (Entry entry : entries) {
 
-				ItemDetails newItem = new ItemDetails();
-				newItem.setName(entry.message);
-				newItem.setItemDescription(entry.message);
-				newItem.setImageNumber(1);
-				newItem.setPrice(entry.timestamp);
+				Entry newItem = new Entry(entry.title, entry.timestamp, entry.pictureURL);
 				image_details.add(newItem);
 
-				Log.d("Entry Added", entry.message);
+				Log.d("Entry Added", entry.title);
 
 				htmlString.append(entry.timestamp + "\n");
-				htmlString.append(entry.message + "\n");
+				htmlString.append(entry.title + "\n");
 				// If the user set the preference to include summary text,
 				// adds it to the display.
 				if (pref) {
@@ -433,6 +442,7 @@ public class MainActivity extends FragmentActivity {
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
+			setRetainInstance(true);
 			View rootView = inflater.inflate(R.layout.fragment_main_map, container, false);
 			map = ((SupportMapFragment) getFragmentManager().findFragmentById(R.id.map)).getMap();
 			// Marker byuMarker = map.addMarker(new
@@ -459,6 +469,7 @@ public class MainActivity extends FragmentActivity {
 		@Override
 		public View onCreateView(LayoutInflater inflater, ViewGroup container,
 				Bundle savedInstanceState) {
+			setRetainInstance(true);
 			View rootView = inflater.inflate(R.layout.fragment_main_list, container, false);
 			ListView listview = (ListView) rootView.findViewById(R.id.listView1);
 			String[] values = new String[] { "Android", "iPhone", "WindowsMobile", "Blackberry",
@@ -520,6 +531,7 @@ public class MainActivity extends FragmentActivity {
 				refreshDisplay = false;
 				Toast.makeText(context, R.string.lost_connection, Toast.LENGTH_SHORT).show();
 			}
+			Log.d("onReceive", "refreshDisplay = " + refreshDisplay);
 		}
 	}
 
