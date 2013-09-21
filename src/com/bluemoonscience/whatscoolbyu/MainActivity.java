@@ -33,8 +33,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -84,7 +84,7 @@ public class MainActivity extends FragmentActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Log.d("main", "onCreate");
-		//this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		// this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.activity_main);
 
 		// Create the adapter that will return a fragment for each of the three
@@ -96,10 +96,15 @@ public class MainActivity extends FragmentActivity {
 		mViewPager = (ViewPager) findViewById(R.id.pager);
 		mViewPager.setAdapter(mSectionsPagerAdapter);
 
+		SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+		// Retrieves a string value for the preferences. The second parameter
+		// is the default value to use if a preference value is not found.
+		sPref = sharedPrefs.getString("listPref", "Wi-Fi");
+
 		IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
 		receiver = new NetworkReceiver();
 		this.registerReceiver(receiver, filter);
-
 	}
 
 	@Override
@@ -136,7 +141,7 @@ public class MainActivity extends FragmentActivity {
 			if (dummyFrag != null) {
 				dummyFrag.loadPage();
 			} else {
-				Log.d("main","button pushed & dummyFrag == null");
+				Log.d("main", "button pushed & dummyFrag == null");
 			}
 			return true;
 		default:
@@ -156,11 +161,11 @@ public class MainActivity extends FragmentActivity {
 
 		@Override
 		public Fragment getItem(int position) {
-			Log.d("main","getItem");
+			Log.d("main", "getItem");
 			// getItem is called to instantiate the fragment for the given page.
 			// Return a DummySectionFragment (defined as a static inner class
 			// below) with the page number as its lone argument.
-			if (position == 0) {
+			if (position == 2) {
 				Fragment fragment = new ListSectionFragment();
 				return fragment;
 
@@ -206,6 +211,7 @@ public class MainActivity extends FragmentActivity {
 		public static final String ARG_SECTION_NUMBER = "section_number";
 		private ListView dummyListView;
 		private TextView dummyEmptyTextView;
+		private ProgressBar dummyEmptyProgressBar;
 		ArrayList<Entry> image_details = new ArrayList<Entry>();
 		ItemListBaseAdapter mAdapter;
 
@@ -221,28 +227,22 @@ public class MainActivity extends FragmentActivity {
 			View rootView = inflater.inflate(R.layout.fragment_main_dummy, container, false);
 			dummyListView = (ListView) rootView.findViewById(R.id.dummyList);
 			dummyEmptyTextView = (TextView) rootView.findViewById(R.id.dummyEmptyTextView);
+			dummyEmptyProgressBar = (ProgressBar) rootView.findViewById(R.id.progressBar1);
 			dummyListView.setEmptyView(rootView.findViewById(R.id.relLayoutEmpty));
 			if (mAdapter == null)
 				mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
 						image_details);
 			dummyListView.setAdapter(mAdapter);
-			// Gets the user's network preference settings
-			SharedPreferences sharedPrefs = PreferenceManager
-					.getDefaultSharedPreferences(getActivity().getApplicationContext());
 
-			// Retrieves a string value for the preferences. The second
-			// parameter
-			// is the default value to use if a preference value is not found.
-			sPref = sharedPrefs.getString("listPref", "Wi-Fi");
 			Log.d("dummy", "onCreateView & dummyAdapter = "
 					+ dummyListView.getAdapter().toString());
 			return rootView;
 		}
-		
+
 		@Override
-		public void onActivityCreated(Bundle savedInstanceState){
+		public void onActivityCreated(Bundle savedInstanceState) {
 			super.onActivityCreated(savedInstanceState);
-			((MainActivity)getActivity()).dummyFrag = this;
+			((MainActivity) getActivity()).dummyFrag = this;
 		}
 
 		// Refreshes the display if the network connection and the
@@ -251,13 +251,11 @@ public class MainActivity extends FragmentActivity {
 		public void onStart() {
 			super.onStart();
 			Log.d("dummy", "onStart & refreshDisplay = " + refreshDisplay);
-
 			// Gets the user's network preference settings
 			SharedPreferences sharedPrefs = PreferenceManager
 					.getDefaultSharedPreferences(getActivity().getApplicationContext());
 
-			// Retrieves a string value for the preferences. The second
-			// parameter
+			// Retrieves a string value for the preferences. The second parameter
 			// is the default value to use if a preference value is not found.
 			sPref = sharedPrefs.getString("listPref", "Wi-Fi");
 
@@ -268,9 +266,7 @@ public class MainActivity extends FragmentActivity {
 			// device loses its Wi-Fi connection midway through the user using the app,
 			// you don't want to refresh the display--this would force the display of
 			// an error page instead of stackoverflow.com content.
-			Log.d("dummy", "onStart beforeIF & refreshDisplay = " + refreshDisplay);
-			if (refreshDisplay) {
-				Log.d("onStart", "will loadPage()");
+			if (refreshDisplay || dummyEmptyTextView.getText().equals("Empty List")) {
 				loadPage();
 			}
 		}
@@ -279,17 +275,7 @@ public class MainActivity extends FragmentActivity {
 		// mobileConnected
 		// variables accordingly.
 		private void updateConnectedFlags() {
-			ConnectivityManager connMgr = (ConnectivityManager) getActivity()
-					.getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
-
-			NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
-			if (activeInfo != null && activeInfo.isConnected()) {
-				wifiConnected = activeInfo.getType() == ConnectivityManager.TYPE_WIFI;
-				mobileConnected = activeInfo.getType() == ConnectivityManager.TYPE_MOBILE;
-			} else {
-				wifiConnected = false;
-				mobileConnected = false;
-			}
+			((MainActivity) getActivity()).updateInternetFlags();
 		}
 
 		// Uses AsyncTask subclass to download the XML feed from
@@ -314,6 +300,7 @@ public class MainActivity extends FragmentActivity {
 		// Displays an error if the app is unable to load content.
 		private void showErrorPage() {
 			dummyEmptyTextView.setText(getResources().getString(R.string.connection_error));
+			dummyEmptyProgressBar.setAlpha(0);
 		}
 
 		// Implementation of AsyncTask used to download XML feed from
@@ -486,40 +473,56 @@ public class MainActivity extends FragmentActivity {
 					.getSystemService(Context.CONNECTIVITY_SERVICE);
 			NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
 
-			// Checks the user prefs and the network connection. Based on the
-			// result, decides
+			// Checks the user prefs and the network connection. Based on the result, decides
 			// whether
 			// to refresh the display or keep the current display.
-			// If the userpref is Wi-Fi only, checks to see if the device has a
-			// Wi-Fi connection.
+			// If the userpref is Wi-Fi only, checks to see if the device has a Wi-Fi connection.
+			if (sPref != null) {
+				Log.d("networkReceiver", "sPref = " + sPref.toString());
+			} else {
+				Log.d("networkReceiver", "sPref is null");
+			}
+			if (networkInfo != null) {
+				Log.d("networkReceiver", "networkInfo is not null");
+				Log.d("networkReceiver", "networkInfo.getType = " + networkInfo.getTypeName());
+			} else {
+				Log.d("networkReceiver", "networkInfo is null");
+			}
 			if (WIFI.equals(sPref) && networkInfo != null
 					&& networkInfo.getType() == ConnectivityManager.TYPE_WIFI) {
 				// If device has its Wi-Fi connection, sets refreshDisplay
-				// to true. This causes the display to be refreshed when the
-				// user
+				// to true. This causes the display to be refreshed when the user
 				// returns to the app.
 				refreshDisplay = true;
 				Toast.makeText(context, R.string.wifi_connected, Toast.LENGTH_SHORT).show();
 
-				// If the setting is ANY network and there is a network
-				// connection
-				// (which by process of elimination would be mobile), sets
-				// refreshDisplay to true.
+				// If the setting is ANY network and there is a network connection
+				// (which by process of elimination would be mobile), sets refreshDisplay to true.
 			} else if (ANY.equals(sPref) && networkInfo != null) {
 				refreshDisplay = true;
 
-				// Otherwise, the app can't download content--either because
-				// there is no network
-				// connection (mobile or Wi-Fi), or because the pref setting is
-				// WIFI, and there
+				// Otherwise, the app can't download content--either because there is no network
+				// connection (mobile or Wi-Fi), or because the pref setting is WIFI, and there
 				// is no Wi-Fi connection.
 				// Sets refreshDisplay to false.
 			} else {
 				refreshDisplay = false;
 				Toast.makeText(context, R.string.lost_connection, Toast.LENGTH_SHORT).show();
 			}
-			Log.d("onReceive", "refreshDisplay = " + refreshDisplay);
+			Log.d("NetworkReceiver","done and refreshDisplay = " + refreshDisplay);
 		}
 	}
 
+	public void updateInternetFlags() {
+		ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo activeInfo = connMgr.getActiveNetworkInfo();
+		if (activeInfo != null && activeInfo.isConnected()) {
+			wifiConnected = activeInfo.getType() == ConnectivityManager.TYPE_WIFI;
+			mobileConnected = activeInfo.getType() == ConnectivityManager.TYPE_MOBILE;
+		} else {
+			wifiConnected = false;
+			mobileConnected = false;
+		}
+
+	}
 }
