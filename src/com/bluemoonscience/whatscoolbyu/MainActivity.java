@@ -51,12 +51,10 @@ import com.google.android.gms.maps.model.LatLng;
 public class MainActivity extends FragmentActivity {
 
 	/**
-	 * The {@link android.support.v4.view.PagerAdapter} that will provide
-	 * fragments for each of the sections. We use a
-	 * {@link android.support.v4.app.FragmentPagerAdapter} derivative, which
-	 * will keep every loaded fragment in memory. If this becomes too memory
-	 * intensive, it may be best to switch to a
-	 * {@link android.support.v4.app.FragmentStatePagerAdapter}.
+	 * The {@link android.support.v4.view.PagerAdapter} that will provide fragments for each of the
+	 * sections. We use a {@link android.support.v4.app.FragmentPagerAdapter} derivative, which will
+	 * keep every loaded fragment in memory. If this becomes too memory intensive, it may be best to
+	 * switch to a {@link android.support.v4.app.FragmentStatePagerAdapter}.
 	 */
 	SectionsPagerAdapter mSectionsPagerAdapter;
 
@@ -142,8 +140,8 @@ public class MainActivity extends FragmentActivity {
 	}
 
 	/**
-	 * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-	 * one of the sections/tabs/pages.
+	 * A {@link FragmentPagerAdapter} that returns a fragment corresponding to one of the
+	 * sections/tabs/pages.
 	 */
 	public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
@@ -196,13 +194,11 @@ public class MainActivity extends FragmentActivity {
 	}
 
 	/**
-	 * A dummy fragment representing a section of the app, but that simply
-	 * displays dummy text.
+	 * A dummy fragment representing a section of the app, but that simply displays dummy text.
 	 */
 	public static class DummySectionFragment extends Fragment {
 		/**
-		 * The fragment argument representing the section number for this
-		 * fragment.
+		 * The fragment argument representing the section number for this fragment.
 		 */
 		public static final String ARG_SECTION_NUMBER = "section_number";
 		private ListView dummyListView;
@@ -254,17 +250,10 @@ public class MainActivity extends FragmentActivity {
 
 			updateConnectedFlags();
 
-			// Only loads the page if refreshDisplay is true. Otherwise, keeps
-			// previous
-			// display. For example, if the user has set "Wi-Fi only" in prefs
-			// and
-			// the
-			// device loses its Wi-Fi connection midway through the user using
-			// the
-			// app,
-			// you don't want to refresh the display--this would force the
-			// display
-			// of
+			// Only loads the page if refreshDisplay is true. Otherwise, keeps previous
+			// display. For example, if the user has set "Wi-Fi only" in prefs and the
+			// device loses its Wi-Fi connection midway through the user using the app,
+			// you don't want to refresh the display--this would force the display of
 			// an error page instead of stackoverflow.com content.
 			if (refreshDisplay) {
 				loadPage();
@@ -485,11 +474,10 @@ public class MainActivity extends FragmentActivity {
 
 	/**
 	 * 
-	 * This BroadcastReceiver intercepts the
-	 * android.net.ConnectivityManager.CONNECTIVITY_ACTION, which indicates a
-	 * connection change. It checks whether the type is TYPE_WIFI. If it is, it
-	 * checks whether Wi-Fi is connected and sets the wifiConnected flag in the
-	 * main activity accordingly.
+	 * This BroadcastReceiver intercepts the android.net.ConnectivityManager.CONNECTIVITY_ACTION,
+	 * which indicates a connection change. It checks whether the type is TYPE_WIFI. If it is, it
+	 * checks whether Wi-Fi is connected and sets the wifiConnected flag in the main activity
+	 * accordingly.
 	 * 
 	 */
 	public class NetworkReceiver extends BroadcastReceiver {
