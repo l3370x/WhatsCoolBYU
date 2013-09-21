@@ -22,21 +22,9 @@
         android:layout_gravity="top"
         android:background="#003076"
         android:paddingBottom="15dp"
-        android:paddingRight="50dp"
         android:paddingTop="10dp"
         android:textColor="#fff" />
 
 </android.support.v4.view.ViewPager>
-
-<Button
-    android:id="@+id/buttonRefresh"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_alignParentRight="true"
-    android:layout_alignParentTop="true"
-    android:alpha="1"
-    android:background="@drawable/ic_refresh"
-    android:maxWidth="100dp"
-    android:minWidth="48dp" />
 
 </RelativeLayout>

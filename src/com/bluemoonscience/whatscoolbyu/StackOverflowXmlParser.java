@@ -72,7 +72,7 @@ public class StackOverflowXmlParser {
     private Entry readEntry(XmlPullParser parser) throws XmlPullParserException, IOException {
         parser.require(XmlPullParser.START_TAG, ns, "row");
         String title = null;
-        String summary = null;
+        String timestamp = null;
         String link = null;
         while (parser.next() != XmlPullParser.END_TAG) {
             if (parser.getEventType() != XmlPullParser.START_TAG) {
@@ -80,16 +80,16 @@ public class StackOverflowXmlParser {
             }
             String name = parser.getName();
             if (name.equals("timestamp")) {
-                title = readTimestamp(parser);
+                timestamp = readTimestamp(parser);
             } else if (name.equals("title")) {
-                summary = readTitle(parser);
+                title = readTitle(parser);
             } else if (name.equals("picurl")) {
                 link = readPictureURL(parser);
             } else {
                 skip(parser);
             }
         }
-        return new Entry(title, summary, link);
+        return new Entry(title, timestamp, link);
     }
 
     // Processes title tags in the feed.

@@ -32,7 +32,6 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -80,13 +79,12 @@ public class MainActivity extends FragmentActivity {
 	// END Network globals
 
 	DummySectionFragment dummyFrag;
-	public Button dummyRefreshButton;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		Log.d("main", "onCreate");
-		this.requestWindowFeature(Window.FEATURE_NO_TITLE);
+		//this.requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.activity_main);
 
 		// Create the adapter that will return a fragment for each of the three
@@ -102,17 +100,6 @@ public class MainActivity extends FragmentActivity {
 		receiver = new NetworkReceiver();
 		this.registerReceiver(receiver, filter);
 
-		dummyRefreshButton = (Button) this.findViewById(R.id.buttonRefresh);
-		dummyRefreshButton.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View v) {
-				Log.d("refresh button", "pushed");// & dummyFrag = " + dummyFrag.toString());
-				if (dummyFrag != null) {
-					dummyFrag.loadPage();
-				} else {
-					Log.d("main","button pushed & dummyFrag == null");
-				}
-			}
-		});
 	}
 
 	@Override
