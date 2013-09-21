@@ -14,9 +14,10 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-  -->
+-->
 
 <resources>
+
     <string-array name="listArray">
         <item>Only when on Wi-Fi</item>
         <item>On any network</item>
@@ -25,4 +26,5 @@
         <item>Wi-Fi</item>
         <item>Any</item>
     </string-array>
+
 </resources>

@@ -332,7 +332,7 @@ public class MainActivity extends FragmentActivity {
 			// showErrorPage();
 			// }
 		}
-
+		
 		// Displays an error if the app is unable to load content.
 		private void showErrorPage() {
 			// TODO instead of just setting text, give popup with connection error info. 
