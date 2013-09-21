@@ -15,6 +15,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -24,6 +25,9 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -35,6 +39,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
+import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,6 +47,8 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+
+import com.bluemoonscience.whatscoolbyu.MyByuContentProvider;
 
 public class MainActivity extends FragmentActivity {
 
@@ -204,7 +211,8 @@ public class MainActivity extends FragmentActivity {
 	/**
 	 * A dummy fragment representing a section of the app, but that simply displays dummy text.
 	 */
-	public static class DummySectionFragment extends Fragment {
+	public static class DummySectionFragment extends Fragment implements
+			LoaderManager.LoaderCallbacks<Cursor> {
 		/**
 		 * The fragment argument representing the section number for this fragment.
 		 */
@@ -212,6 +220,7 @@ public class MainActivity extends FragmentActivity {
 		private ListView dummyListView;
 		private TextView dummyEmptyTextView;
 		private ProgressBar dummyEmptyProgressBar;
+		private SimpleCursorAdapter adapter;
 		ArrayList<Entry> image_details = new ArrayList<Entry>();
 		ItemListBaseAdapter mAdapter;
 
@@ -229,10 +238,11 @@ public class MainActivity extends FragmentActivity {
 			dummyEmptyTextView = (TextView) rootView.findViewById(R.id.dummyEmptyTextView);
 			dummyEmptyProgressBar = (ProgressBar) rootView.findViewById(R.id.progressBar1);
 			dummyListView.setEmptyView(rootView.findViewById(R.id.relLayoutEmpty));
-			if (mAdapter == null)
-				mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
-						image_details);
-			dummyListView.setAdapter(mAdapter);
+			fillData();
+//			if (mAdapter == null)
+//				mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
+//						image_details);
+//			dummyListView.setAdapter(mAdapter);
 
 			Log.d("dummy", "onCreateView & dummyAdapter = "
 					+ dummyListView.getAdapter().toString());
@@ -286,15 +296,16 @@ public class MainActivity extends FragmentActivity {
 		// network operations on a separate thread from the UI.
 		public void loadPage() {
 			Log.d("dummy", "loadPage & refreshDisplay = " + refreshDisplay);
-			if (((sPref.equals(ANY)) && (wifiConnected || mobileConnected))
-					|| ((sPref.equals(WIFI)) && (wifiConnected))) {
-				// AsyncTask subclass
-				Log.d("loadPage", "just before executing(URL)");
-				new DownloadXmlTask().execute(URL);
-				dummyEmptyTextView.setText("Success!");
-			} else {
-				showErrorPage();
-			}
+			return;
+//			if (((sPref.equals(ANY)) && (wifiConnected || mobileConnected))
+//					|| ((sPref.equals(WIFI)) && (wifiConnected))) {
+//				// AsyncTask subclass
+//				Log.d("loadPage", "just before executing(URL)");
+//				new DownloadXmlTask().execute(URL);
+//				dummyEmptyTextView.setText("Success!");
+//			} else {
+//				showErrorPage();
+//			}
 		}
 
 		// Displays an error if the app is unable to load content.
@@ -391,6 +402,61 @@ public class MainActivity extends FragmentActivity {
 			return stream;
 		}
 
+		// Creates a new loader after the initLoader () call
+		@Override
+		public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+			Log.d("dummy","onCreateLoader");
+			String[] projection = { ByuTable.COLUMN_ID, ByuTable.COLUMN_SDESCRIPTION,
+					ByuTable.COLUMN_TITLE, ByuTable.COLUMN_TIMESTAMP };
+			CursorLoader cursorLoader = new CursorLoader(getActivity().getApplicationContext(),
+					MyByuContentProvider.CONTENT_URI, projection, null, null, null);
+			return cursorLoader;
+		}
+
+		private void createByu() {
+			Log.d("dummy","createByu");
+//			Intent i = new Intent(getActivity().getApplicationContext(), ByuDetailActivity.class);
+//			startActivity(i);
+		}
+
+		// Opens the second activity if an entry is clicked
+		// @Override
+		// protected void onListItemClick(ListView l, View v, int position, long id) {
+		// super.onListItemClick(l, v, position, id);
+		// Intent i = new Intent(getActivity().getApplicationContext(), ByuDetailActivity.class);
+		// Uri todoUri = Uri.parse(MyByuContentProvider.CONTENT_URI + "/" + id);
+		// i.putExtra(MyByuContentProvider.CONTENT_ITEM_TYPE, todoUri);
+		//
+		// startActivity(i);
+		// }
+
+		private void fillData() {
+			Log.d("dummy","fillData");
+			// Fields from the database (projection)
+			// Must include the _id column for the adapter to work
+			String[] from = new String[] { ByuTable.COLUMN_TITLE, ByuTable.COLUMN_SDESCRIPTION };
+			// Fields on the UI to which we map
+			int[] to = new int[] { R.id.tvTitle, R.id.tvShortDesc };
+
+			getLoaderManager().initLoader(0, null, this);
+			adapter = new SimpleCursorAdapter(getActivity().getApplicationContext(),
+					R.layout.list_entry, null, from, to, 0);
+
+			dummyListView.setAdapter(adapter);
+		}
+
+		@Override
+		public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+			Log.d("dummy","onLoadFinished");
+			adapter.swapCursor(data);
+		}
+
+		@Override
+		public void onLoaderReset(Loader<Cursor> loader) {
+			Log.d("dummy","onLoaderReset");
+			// data is not available anymore, delete reference
+			adapter.swapCursor(null);
+		}
 	}
 
 	/**

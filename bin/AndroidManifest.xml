@@ -43,14 +43,19 @@
         </activity>
         <activity
             android:name=".SettingsActivity"
-            android:label="SettingsActivity"
-            android:configChanges="orientation|keyboardHidden" >
+            android:configChanges="orientation|keyboardHidden"
+            android:label="SettingsActivity" >
             <intent-filter>
                 <action android:name="android.intent.action.MANAGE_NETWORK_USAGE" />
 
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name=".MyByuContentProvider"
+            android:authorities="com.bluemoonscience.whatscoolbyu" >
+        </provider>
 
         <meta-data
             android:name="com.google.android.maps.v2.API_KEY"
