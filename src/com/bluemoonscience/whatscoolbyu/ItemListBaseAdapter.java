@@ -13,9 +13,6 @@ import android.widget.TextView;
 public class ItemListBaseAdapter extends BaseAdapter {
 	private static ArrayList<Entry> itemDetailsrrayList;
 
-//	private Integer[] imgid = { R.drawable.p1, R.drawable.bb2, R.drawable.p2, R.drawable.bb5,
-//			R.drawable.bb6, R.drawable.d1 };
-
 	private LayoutInflater l_Inflater;
 
 	public ItemListBaseAdapter(Context context, ArrayList<Entry> results) {
@@ -41,27 +38,22 @@ public class ItemListBaseAdapter extends BaseAdapter {
 			convertView = l_Inflater.inflate(R.layout.list_entry, null);
 			holder = new ViewHolder();
 			holder.txt_itemTitle = (TextView) convertView.findViewById(R.id.tvTitle);
-			holder.txt_itemTimestamp = (TextView) convertView.findViewById(R.id.tvEntry);
-			//holder.txt_itemDescription = (TextView) convertView.findViewById(R.id.itemDescription);
-			//holder.txt_itemPrice = (TextView) convertView.findViewById(R.id.price);
-			//holder.itemImage = (ImageView) convertView.findViewById(R.id.photo);
+			holder.txt_itemShortDesc = (TextView) convertView.findViewById(R.id.tvShortDesc);
 
 			convertView.setTag(holder);
 		} else {
 			holder = (ViewHolder) convertView.getTag();
 		}
 
-		holder.txt_itemTitle.setText(itemDetailsrrayList.get(position).getTitle());
-		holder.txt_itemTimestamp.setText(itemDetailsrrayList.get(position).getTimestamp());
-		//holder.txt_itemPrice.setText(itemDetailsrrayList.get(position).getPrice());
-		//holder.itemImage.setImageResource(imgid[itemDetailsrrayList.get(position).getImageNumber() - 1]);
+		holder.txt_itemTitle.setText(itemDetailsrrayList.get(position).title);
+		holder.txt_itemShortDesc.setText(itemDetailsrrayList.get(position).sDescription);
 
 		return convertView;
 	}
 
 	static class ViewHolder {
 		TextView txt_itemTitle;
-		TextView txt_itemTimestamp;
+		TextView txt_itemShortDesc;
 		
 		//TextView txt_itemPrice;
 		//ImageView itemImage;

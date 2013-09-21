@@ -71,7 +71,7 @@ int id relLayoutEmpty 0x7f060008
 int id satellite 0x7f060002
 int id settings 0x7f060011
 int id terrain 0x7f060003
-int id tvEntry 0x7f06000f
+int id tvShortDesc 0x7f06000f
 int id tvTitle 0x7f06000e
 int layout activity_main 0x7f030000
 int layout fragment_main_dummy 0x7f030001

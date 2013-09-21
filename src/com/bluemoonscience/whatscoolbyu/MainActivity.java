@@ -335,14 +335,6 @@ public class MainActivity extends FragmentActivity {
 			StackOverflowXmlParser stackOverflowXmlParser = new StackOverflowXmlParser();
 			List<Entry> entries = null;
 
-			// Checks whether the user set the preference to include summary
-			// text
-			SharedPreferences sharedPrefs = PreferenceManager
-					.getDefaultSharedPreferences(getActivity().getApplicationContext());
-			boolean pref = sharedPrefs.getBoolean("summaryPref", false);
-
-			StringBuilder htmlString = new StringBuilder();
-
 			try {
 				Log.d("laodXML", "before downloadURL");
 				stream = downloadUrl(urlString);
@@ -368,21 +360,20 @@ public class MainActivity extends FragmentActivity {
 			// a text summary.
 			for (Entry entry : entries) {
 
-				Entry newItem = new Entry(entry.title, entry.timestamp, entry.pictureURL);
-				image_details.add(newItem);
+				image_details.add(entry);
 
 				Log.d("Entry Added", entry.title);
 
-				htmlString.append(entry.timestamp + "\n");
-				htmlString.append(entry.title + "\n");
-				// If the user set the preference to include summary text,
-				// adds it to the display.
-				if (pref) {
-					htmlString.append(entry.pictureURL);
-				}
-				htmlString.append("\n\n");
+				// htmlString.append(entry.timestamp + "\n");
+				// htmlString.append(entry.title + "\n");
+				// // If the user set the preference to include summary text,
+				// // adds it to the display.
+				// if (pref) {
+				// htmlString.append(entry.pictureURL);
+				// }
+				// htmlString.append("\n\n");
 			}
-			return htmlString.toString();
+			return "done";
 		}
 
 		// Given a string representation of a URL, sets up a connection and gets
@@ -509,7 +500,7 @@ public class MainActivity extends FragmentActivity {
 				refreshDisplay = false;
 				Toast.makeText(context, R.string.lost_connection, Toast.LENGTH_SHORT).show();
 			}
-			Log.d("NetworkReceiver","done and refreshDisplay = " + refreshDisplay);
+			Log.d("NetworkReceiver", "done and refreshDisplay = " + refreshDisplay);
 		}
 	}
 
