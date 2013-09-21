@@ -5,12 +5,15 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -36,7 +39,8 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.SimpleCursorAdapter;
@@ -47,8 +51,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
-
-import com.bluemoonscience.whatscoolbyu.MyByuContentProvider;
 
 public class MainActivity extends FragmentActivity {
 
@@ -130,6 +132,7 @@ public class MainActivity extends FragmentActivity {
 	// Populates the activity's options menu.
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
+		Log.d("main", "onCreateOptionsMenu");
 		MenuInflater inflater = getMenuInflater();
 		inflater.inflate(R.menu.mainmenu, menu);
 		return true;
@@ -222,6 +225,7 @@ public class MainActivity extends FragmentActivity {
 		private SimpleCursorAdapter adapter;
 		ArrayList<Entry> image_details = new ArrayList<Entry>();
 		ItemListBaseAdapter mAdapter;
+		Calendar dateLocalRecent = new GregorianCalendar(1988, 6, 26);
 
 		public DummySectionFragment() {
 		}
@@ -331,6 +335,7 @@ public class MainActivity extends FragmentActivity {
 
 		// Displays an error if the app is unable to load content.
 		private void showErrorPage() {
+			// TODO instead of just setting text, give popup with connection error info. 
 			dummyEmptyTextView.setText(getResources().getString(R.string.connection_error));
 			dummyEmptyProgressBar.setAlpha(0);
 		}
@@ -430,15 +435,9 @@ public class MainActivity extends FragmentActivity {
 			String[] projection = { ByuTable.COLUMN_ID, ByuTable.COLUMN_SDESCRIPTION,
 					ByuTable.COLUMN_TITLE, ByuTable.COLUMN_TIMESTAMP };
 			CursorLoader cursorLoader = new CursorLoader(getActivity().getApplicationContext(),
-					MyByuContentProvider.CONTENT_URI, projection, null, null, null);
+					MyByuContentProvider.CONTENT_URI, projection, null, null,
+					ByuTable.COLUMN_TIMESTAMP + " DESC");
 			return cursorLoader;
-		}
-
-		private void createByu() {
-			Log.d("dummy", "createByu");
-			// Intent i = new Intent(getActivity().getApplicationContext(),
-			// ByuDetailActivity.class);
-			// startActivity(i);
 		}
 
 		// Opens the second activity if an entry is clicked
@@ -471,6 +470,31 @@ public class MainActivity extends FragmentActivity {
 		public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 			Log.d("dummy", "onLoadFinished");
 			adapter.swapCursor(data);
+			dateLocalRecent = getMostRecentLocalTimestamp(data);
+			Log.d("dummy", "most recent = " + dateLocalRecent.toString());
+		}
+
+		private Calendar getMostRecentLocalTimestamp(Cursor data) {
+			Log.d("dummy", "getMostRecent count = " + data.getCount());
+			Calendar recent = dateLocalRecent;
+			while (data.moveToNext()) {
+				String preTime = data.getString(data.getColumnIndex(ByuTable.COLUMN_TIMESTAMP));
+				Integer year = Integer.parseInt(preTime.substring(0, 4));
+				Integer month = Integer.parseInt(preTime.substring(5, 7));
+				Integer day = Integer.parseInt(preTime.substring(8, 10));
+				Integer hour = Integer.parseInt(preTime.substring(11, 13));
+				Integer minute = Integer.parseInt(preTime.substring(14, 16));
+				Integer second = Integer.parseInt(preTime.substring(17, 19));
+				Log.d("dummy", "preTIme = " + preTime);
+				Log.d("dummy", String.format(
+						"year = %d,  month = %d, day = %d, hour = %d, minute = %d, second = %d",
+						year, month, day, hour, minute, second));
+				Calendar thisDate = new GregorianCalendar(year, month, day, hour, minute, second);
+				if (thisDate.after(recent)) {
+					recent = thisDate;
+				}
+			}
+			return recent;
 		}
 
 		@Override
@@ -516,16 +540,19 @@ public class MainActivity extends FragmentActivity {
 	 */
 	public static class NewDateSectionFragment extends Fragment {
 
+		private EditText etTitle;
+		private EditText etSDesc;
+
 		public NewDateSectionFragment() {
 		}
 
 		@Override
-		public View onCreateView(LayoutInflater inflater, ViewGroup container,
-				Bundle savedInstanceState) {
+		public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle bundle) {
 			setRetainInstance(true);
-			View rootView = inflater.inflate(R.layout.fragment_main_newdate, container, false);
 			setHasOptionsMenu(true);
-
+			View rootView = inflater.inflate(R.layout.fragment_main_newdate, container, false);
+			etTitle = (EditText) rootView.findViewById(R.id.newd_etTitle);
+			etSDesc = (EditText) rootView.findViewById(R.id.newd_etSDesc);
 			return rootView;
 		}
 
@@ -540,10 +567,55 @@ public class MainActivity extends FragmentActivity {
 			switch (item.getItemId()) {
 			case R.id.newd_save:
 				Log.d("newd", "save");
+				doSave();
 				return true;
 			default:
 				return super.onOptionsItemSelected(item);
 			}
+		}
+
+		private void doSave() {
+			String title = etTitle.getText().toString();
+			String sDescription = etSDesc.getText().toString();
+
+			// Only save if either summary or description
+			// is available
+
+			if (sDescription.length() == 0) {
+				makeToast("title");
+				return;
+			}
+			if (title.length() == 0) {
+				makeToast("short description");
+				return;
+			}
+
+			ContentValues values = new ContentValues();
+			values.put(ByuTable.COLUMN_TITLE, title);
+			values.put(ByuTable.COLUMN_SDESCRIPTION, sDescription);
+			values.put(ByuTable.COLUMN_TIMESTAMP, "2000-06-26 03:03:07");
+
+			// New byu
+			getActivity().getContentResolver().insert(MyByuContentProvider.CONTENT_URI, values);
+			Log.d("newd", "afterSave");
+			afterSave();
+
+		}
+
+		private void afterSave() {
+			InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(
+					Context.INPUT_METHOD_SERVICE);
+			imm.hideSoftInputFromWindow(etTitle.getWindowToken(), 0);
+			etTitle.setText("");
+			etSDesc.setText("");
+			((MainActivity) getActivity()).mViewPager.setCurrentItem(0, true);
+			// TODO attempt to upload to cloud in background
+		}
+
+		private void makeToast(String what) {
+			// TODO make this a pop-up instead of a toast.
+			Toast.makeText(getActivity().getApplicationContext(), "Please enter a " + what + ".",
+					Toast.LENGTH_LONG).show();
 		}
 
 	}

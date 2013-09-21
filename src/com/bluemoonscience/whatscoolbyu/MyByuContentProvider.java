@@ -155,7 +155,7 @@ public class MyByuContentProvider extends ContentProvider {
 		String[] available = { ByuTable.COLUMN_AVGRATING, ByuTable.COLUMN_ID,
 				ByuTable.COLUMN_LASTUPDATESHORT, ByuTable.COLUMN_LAT, ByuTable.COLUMN_LNG,
 				ByuTable.COLUMN_PICTUREURL, ByuTable.COLUMN_SDESCRIPTION,
-				ByuTable.COLUMN_TIMESTAMP, ByuTable.COLUMN_TITLE };
+				ByuTable.COLUMN_TIMESTAMP, ByuTable.COLUMN_TITLE, ByuTable.COLUMN_CLOUDID };
 		if (projection != null) {
 			HashSet<String> requestedColumns = new HashSet<String>(Arrays.asList(projection));
 			HashSet<String> availableColumns = new HashSet<String>(Arrays.asList(available));
