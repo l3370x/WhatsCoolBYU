@@ -64,11 +64,7 @@ public class DummySectionFragment extends Fragment implements
 		dummyEmptyTextView = (TextView) rootView.findViewById(R.id.dummyEmptyTextView);
 		dummyEmptyProgressBar = (ProgressBar) rootView.findViewById(R.id.progressBar1);
 		dummyListView.setEmptyView(rootView.findViewById(R.id.relLayoutEmpty));
-		fillData();
-		// if (mAdapter == null)
-		// mAdapter = new ItemListBaseAdapter(getActivity().getApplicationContext(),
-		// image_details);
-		// dummyListView.setAdapter(mAdapter);
+		initiateLoader();
 
 		Log.d("dummy", "onCreateView & dummyAdapter = "
 				+ dummyListView.getAdapter().toString());
@@ -150,6 +146,10 @@ public class DummySectionFragment extends Fragment implements
 				|| ((MainActivity.sPref.equals(MainActivity.WIFI)) && (MainActivity.wifiConnected))) {
 			// AsyncTask subclass
 			Log.d("loadPage", "just before executing(URL)");
+			String[] projection = {ByuTable.COLUMN_TIMESTAMP};
+			Cursor data = getActivity().getContentResolver().query(MyByuContentProvider.CONTENT_URI, projection , null, null, null);
+			dateLocalRecent = getMostRecentLocalTimestamp(data);
+			Log.d("dummy", "most recent = " + dateLocalRecent.toString());
 			new DownloadXmlTask().execute(buildRecentDateURL());
 			dummyEmptyTextView.setText("Success!");
 		} else {
@@ -278,10 +278,9 @@ public class DummySectionFragment extends Fragment implements
 	// startActivity(i);
 	// }
 
-	private void fillData() {
-		Log.d("dummy", "fillData");
-		// Fields from the database (projection)
-		// Must include the _id column for the adapter to work
+	private void initiateLoader() {
+		Log.d("dummy", "initiateLoader");
+		
 		String[] from = new String[] { ByuTable.COLUMN_TITLE, ByuTable.COLUMN_SDESCRIPTION };
 		// Fields on the UI to which we map
 		int[] to = new int[] { R.id.tvTitle, R.id.tvShortDesc };
@@ -289,7 +288,7 @@ public class DummySectionFragment extends Fragment implements
 		getLoaderManager().initLoader(0, null, this);
 		adapter = new SimpleCursorAdapter(getActivity().getApplicationContext(),
 				R.layout.list_entry, null, from, to, 0);
-
+		
 		dummyListView.setAdapter(adapter);
 	}
 
@@ -297,9 +296,9 @@ public class DummySectionFragment extends Fragment implements
 	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 		Log.d("dummy", "onLoadFinished");
 		adapter.swapCursor(data);
-		dateLocalRecent = getMostRecentLocalTimestamp(data);
-		Log.d("dummy", "most recent = " + dateLocalRecent.toString());
-		new DownloadXmlTask().execute(buildRecentDateURL());
+//		dateLocalRecent = getMostRecentLocalTimestamp(data);
+//		Log.d("dummy", "most recent = " + dateLocalRecent.toString());
+//		new DownloadXmlTask().execute(buildRecentDateURL());
 	}
 
 	private String buildRecentDateURL() {
@@ -330,7 +329,7 @@ public class DummySectionFragment extends Fragment implements
 			Log.d("dummy", String.format(
 					"year = %d,  month = %d, day = %d, hour = %d, minute = %d, second = %d",
 					year, month, day, hour, minute, second));
-			Calendar thisDate = new GregorianCalendar(year, month, day, hour, minute, second);
+			Calendar thisDate = new GregorianCalendar(year, month, day, hour, minute+1, second);
 			if (thisDate.after(recent)) {
 				recent = thisDate;
 			}
