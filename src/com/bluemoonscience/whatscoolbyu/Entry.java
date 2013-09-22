@@ -1,6 +1,7 @@
 package com.bluemoonscience.whatscoolbyu;
 
 public class Entry {
+
 	public int id;
 	public String title;
 	public float lat;
@@ -26,5 +27,13 @@ public class Entry {
 		this.sDescription = sDescription;
 		this.pictureURL = pictureURL;
 		this.lastUpdateShort = lastUpdateShort;
+	}
+	
+	@Override
+	public String toString() {
+		return "Entry [id=" + id + ", title=" + title + ", lat=" + lat + ", lng=" + lng
+				+ ", avgRating=" + avgRating + ", timestamp=" + timestamp + ", sDescription="
+				+ sDescription + ", pictureURL=" + pictureURL + ", lastUpdateShort="
+				+ lastUpdateShort + "]";
 	}
 }
