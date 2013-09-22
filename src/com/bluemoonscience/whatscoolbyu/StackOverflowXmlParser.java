@@ -108,7 +108,7 @@ public class StackOverflowXmlParser {
 			}
 		}
 		return new Entry(id, title, lat, lng, avgRating, timestamp, sDescription, pictureURL,
-				lastUpdateShort);
+				lastUpdateShort,0);
 	}
 
 	private String readLastUpdateShort(XmlPullParser parser) throws XmlPullParserException,

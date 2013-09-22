@@ -33,7 +33,6 @@ import android.widget.ProgressBar;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
 
-
 /**
  * A dummy fragment representing a section of the app, but that simply displays dummy text.
  */
@@ -66,8 +65,7 @@ public class DummySectionFragment extends Fragment implements
 		dummyListView.setEmptyView(rootView.findViewById(R.id.relLayoutEmpty));
 		initiateLoader();
 
-		Log.d("dummy", "onCreateView & dummyAdapter = "
-				+ dummyListView.getAdapter().toString());
+		Log.d("dummy", "onCreateView & dummyAdapter = " + dummyListView.getAdapter().toString());
 		return rootView;
 	}
 
@@ -146,9 +144,11 @@ public class DummySectionFragment extends Fragment implements
 				|| ((MainActivity.sPref.equals(MainActivity.WIFI)) && (MainActivity.wifiConnected))) {
 			// AsyncTask subclass
 			Log.d("loadPage", "just before executing(URL)");
-			String[] projection = {ByuTable.COLUMN_TIMESTAMP};
-			Cursor data = getActivity().getContentResolver().query(MyByuContentProvider.CONTENT_URI, projection , null, null, null);
+			String[] projection = { ByuTable.COLUMN_TIMESTAMP };
+			Cursor data = getActivity().getContentResolver().query(
+					MyByuContentProvider.CONTENT_URI, projection, null, null, null);
 			dateLocalRecent = getMostRecentLocalTimestamp(data);
+			data.close();
 			Log.d("dummy", "most recent = " + dateLocalRecent.toString());
 			new DownloadXmlTask().execute(buildRecentDateURL());
 			dummyEmptyTextView.setText("Success!");
@@ -187,8 +187,7 @@ public class DummySectionFragment extends Fragment implements
 
 	// Uploads XML from stackoverflow.com, parses it, and combines it with
 	// HTML markup. Returns HTML string.
-	private String loadXmlFromNetwork(String urlString) throws XmlPullParserException,
-			IOException {
+	private String loadXmlFromNetwork(String urlString) throws XmlPullParserException, IOException {
 		InputStream stream = null;
 		StackOverflowXmlParser stackOverflowXmlParser = new StackOverflowXmlParser();
 		List<Entry> entries = null;
@@ -211,9 +210,8 @@ public class DummySectionFragment extends Fragment implements
 		for (Entry entry : entries) {
 			Log.d("cloud entry", entry.toString());
 			String[] projection = { ByuTable.COLUMN_ID };
-			Cursor c = getActivity().getContentResolver().query(
-					MyByuContentProvider.CONTENT_URI, projection,
-					ByuTable.COLUMN_CLOUDID + " = " + entry.id, null, null);
+			Cursor c = getActivity().getContentResolver().query(MyByuContentProvider.CONTENT_URI,
+					projection, ByuTable.COLUMN_CLOUDID + " = " + entry.id, null, null);
 			ContentValues values = new ContentValues();
 			values.put(ByuTable.COLUMN_CLOUDID, entry.id);
 			values.put(ByuTable.COLUMN_SDESCRIPTION, entry.sDescription);
@@ -224,6 +222,7 @@ public class DummySectionFragment extends Fragment implements
 			values.put(ByuTable.COLUMN_LAT, entry.lat);
 			values.put(ByuTable.COLUMN_LNG, entry.lng);
 			values.put(ByuTable.COLUMN_PICTUREURL, entry.pictureURL);
+			values.put(ByuTable.COLUMN_UNIQUENEXT, 0);
 			if (c.getCount() > 0) {
 				Log.d("query", "the query returned a result");
 				c.moveToFirst();
@@ -231,8 +230,8 @@ public class DummySectionFragment extends Fragment implements
 						values, ByuTable.COLUMN_CLOUDID + " = " + entry.id, null);
 			} else {
 				Log.d("query", "the query returned NO results");
-				getActivity().getContentResolver().insert(MyByuContentProvider.CONTENT_URI,
-						values);
+				getActivity().getContentResolver()
+						.insert(MyByuContentProvider.CONTENT_URI, values);
 			}
 			c.close();
 
@@ -280,7 +279,7 @@ public class DummySectionFragment extends Fragment implements
 
 	private void initiateLoader() {
 		Log.d("dummy", "initiateLoader");
-		
+
 		String[] from = new String[] { ByuTable.COLUMN_TITLE, ByuTable.COLUMN_SDESCRIPTION };
 		// Fields on the UI to which we map
 		int[] to = new int[] { R.id.tvTitle, R.id.tvShortDesc };
@@ -288,7 +287,7 @@ public class DummySectionFragment extends Fragment implements
 		getLoaderManager().initLoader(0, null, this);
 		adapter = new SimpleCursorAdapter(getActivity().getApplicationContext(),
 				R.layout.list_entry, null, from, to, 0);
-		
+
 		dummyListView.setAdapter(adapter);
 	}
 
@@ -296,9 +295,9 @@ public class DummySectionFragment extends Fragment implements
 	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 		Log.d("dummy", "onLoadFinished");
 		adapter.swapCursor(data);
-//		dateLocalRecent = getMostRecentLocalTimestamp(data);
-//		Log.d("dummy", "most recent = " + dateLocalRecent.toString());
-//		new DownloadXmlTask().execute(buildRecentDateURL());
+		// dateLocalRecent = getMostRecentLocalTimestamp(data);
+		// Log.d("dummy", "most recent = " + dateLocalRecent.toString());
+		// new DownloadXmlTask().execute(buildRecentDateURL());
 	}
 
 	private String buildRecentDateURL() {
@@ -327,9 +326,9 @@ public class DummySectionFragment extends Fragment implements
 			Integer second = Integer.parseInt(preTime.substring(17, 19));
 			Log.d("dummy", "preTIme = " + preTime);
 			Log.d("dummy", String.format(
-					"year = %d,  month = %d, day = %d, hour = %d, minute = %d, second = %d",
-					year, month, day, hour, minute, second));
-			Calendar thisDate = new GregorianCalendar(year, month, day, hour, minute+1, second);
+					"year = %d,  month = %d, day = %d, hour = %d, minute = %d, second = %d", year,
+					month, day, hour, minute, second));
+			Calendar thisDate = new GregorianCalendar(year, month, day, hour, minute + 1, second);
 			if (thisDate.after(recent)) {
 				recent = thisDate;
 			}

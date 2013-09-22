@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class ByuDatabaseHelper extends SQLiteOpenHelper {
 
 	  private static final String DATABASE_NAME = "byutable.db";
-	  private static final int DATABASE_VERSION = 6;
+	  private static final int DATABASE_VERSION = 9;
 
 	  public ByuDatabaseHelper(Context context) {
 	    super(context, DATABASE_NAME, null, DATABASE_VERSION);

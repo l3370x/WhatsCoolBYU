@@ -2,7 +2,6 @@ package com.bluemoonscience.whatscoolbyu;
 
 import java.util.Locale;
 
-
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -22,7 +21,6 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.widget.Toast;
-
 
 public class MainActivity extends FragmentActivity {
 

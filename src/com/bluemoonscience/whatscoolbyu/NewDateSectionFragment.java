@@ -15,9 +15,11 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -92,46 +94,53 @@ public class NewDateSectionFragment extends Fragment {
 		values.put(ByuTable.COLUMN_TIMESTAMP, "2000-06-26 03:03:07");
 
 		// New byu
+		SharedPreferences sharedPrefs = PreferenceManager
+				.getDefaultSharedPreferences(getActivity().getApplicationContext());
+		int nextUniqueID = sharedPrefs.getInt("uniqueNextID", 1337);
+		SharedPreferences.Editor editor = sharedPrefs.edit();
+		editor.putInt("uniqueNextID", nextUniqueID + 1);
+		editor.commit();
+		values.put(ByuTable.COLUMN_UNIQUENEXT,String.valueOf(nextUniqueID));
 		getActivity().getContentResolver().insert(MyByuContentProvider.CONTENT_URI, values);
 		Log.d("newd", "afterSave");
 
 		// attempt to upload all non uploaded entries to cloud in background
-		upload(values);
+		upload(values, nextUniqueID);
 
 		// perform clean up operations
 		afterSave();
 
 	}
 
-	private void upload(ContentValues values) {
+	private void upload(ContentValues values, int nextUniqueID) {
 		Log.d("newd", "upload");
 		Entry e = new Entry(0, values.getAsString(ByuTable.COLUMN_TITLE), 0, 0, 2.5, "5",
-				values.getAsString(ByuTable.COLUMN_SDESCRIPTION), "abcd", "Sep 13");
+				values.getAsString(ByuTable.COLUMN_SDESCRIPTION), "abcd", "Sep 13", 0);
 		String theURL = buildNewdURL(e);
-		new UploadNewDate().execute(theURL);
+		new UploadNewDate().execute(theURL, String.valueOf(nextUniqueID));
 		Log.d("url", theURL);
 	}
 
-	private void upload() {
-		Cursor c = getActivity().getContentResolver().query(MyByuContentProvider.CONTENT_URI,
-				null, ByuTable.COLUMN_CLOUDID + " = " + 0, null, null);
-		while (c.moveToNext()) {
-			Entry e = new Entry(c.getInt(c.getColumnIndex(ByuTable.COLUMN_ID)), c.getString(c
-					.getColumnIndex(ByuTable.COLUMN_TITLE)), c.getFloat(c
-					.getColumnIndex(ByuTable.COLUMN_LAT)), c.getFloat(c
-					.getColumnIndex(ByuTable.COLUMN_LNG)), c.getDouble(c
-					.getColumnIndex(ByuTable.COLUMN_AVGRATING)), c.getString(c
-					.getColumnIndex(ByuTable.COLUMN_TIMESTAMP)), c.getString(c
-					.getColumnIndex(ByuTable.COLUMN_SDESCRIPTION)), c.getString(c
-					.getColumnIndex(ByuTable.COLUMN_PICTUREURL)), c.getString(c
-					.getColumnIndex(ByuTable.COLUMN_LASTUPDATESHORT)));
-			String theURL = buildNewdURL(e);
-			Log.d("url", theURL);
-			new UploadNewDate().execute(theURL);
-
-		}
-		c.close();
-	}
+//	private void upload() {
+//		Cursor c = getActivity().getContentResolver().query(MyByuContentProvider.CONTENT_URI,
+//				null, ByuTable.COLUMN_CLOUDID + " = " + 0, null, null);
+//		while (c.moveToNext()) {
+//			Entry e = new Entry(c.getInt(c.getColumnIndex(ByuTable.COLUMN_ID)), c.getString(c
+//					.getColumnIndex(ByuTable.COLUMN_TITLE)), c.getFloat(c
+//					.getColumnIndex(ByuTable.COLUMN_LAT)), c.getFloat(c
+//					.getColumnIndex(ByuTable.COLUMN_LNG)), c.getDouble(c
+//					.getColumnIndex(ByuTable.COLUMN_AVGRATING)), c.getString(c
+//					.getColumnIndex(ByuTable.COLUMN_TIMESTAMP)), c.getString(c
+//					.getColumnIndex(ByuTable.COLUMN_SDESCRIPTION)), c.getString(c
+//					.getColumnIndex(ByuTable.COLUMN_PICTUREURL)), c.getString(c
+//					.getColumnIndex(ByuTable.COLUMN_LASTUPDATESHORT)), 0);
+//			String theURL = buildNewdURL(e);
+//			Log.d("url", theURL);
+//			new UploadNewDate().execute(theURL);
+//
+//		}
+//		c.close();
+//	}
 
 	private String buildNewdURL(Entry e) {
 		// $vals = "'".$_GET['title']."', "."'".$_GET['lat']."', "."'".$_GET['lng']."',
@@ -200,14 +209,37 @@ public class NewDateSectionFragment extends Fragment {
 				Log.d("url", e.toString());
 			}
 			Log.d("url", "will return " + responseString);
-			return responseString;
+			if (responseString.startsWith("n=")) {
+				Log.d("url",
+						"will return " + responseString.substring(2, responseString.length() - 2)
+								+ "," + uri[1]);
+				return responseString.substring(2, responseString.length() - 2) + "," + uri[1];
+			} else {
+				Log.d("url", "will return bad");
+				return "bad";
+			}
 		}
 
 		@Override
 		protected void onPostExecute(String result) {
 			super.onPostExecute(result);
-			// Do anything with response..
 			Log.d("url", result);
+			int commaLoc = result.indexOf(",");
+			int locid = Integer.parseInt(result.substring(commaLoc + 1, result.length()));
+			int cloudid = Integer.parseInt(result.substring(0, commaLoc));
+			Log.d("url", "cloudID = " + cloudid + ", locid = " + locid);
+			String[] projection = { ByuTable.COLUMN_ID, ByuTable.COLUMN_CLOUDID, ByuTable.COLUMN_UNIQUENEXT };
+			Cursor c = getActivity().getContentResolver().query(MyByuContentProvider.CONTENT_URI,
+					projection, ByuTable.COLUMN_UNIQUENEXT + " = " + locid, null, null);
+			ContentValues values = new ContentValues();
+			values.put(ByuTable.COLUMN_CLOUDID, cloudid);
+			if (c.getCount() > 0) {
+				Log.d("query", "the query returned a result");
+				c.moveToFirst();
+				getActivity().getContentResolver().update(MyByuContentProvider.CONTENT_URI,
+						values, ByuTable.COLUMN_UNIQUENEXT + " = " + locid, null);
+			}
+			c.close();
 		}
 	}
 

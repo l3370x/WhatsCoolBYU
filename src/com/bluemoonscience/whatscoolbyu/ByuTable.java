@@ -23,6 +23,7 @@ public class ByuTable {
 	public static final String COLUMN_SDESCRIPTION = "sDescription";
 	public static final String COLUMN_PICTUREURL = "pictureURL";
 	public static final String COLUMN_LASTUPDATESHORT = "lastUpdateShort";
+	public static final String COLUMN_UNIQUENEXT = "uniqueNext";
 
 	// Database creation SQL statement
 	private static final String DATABASE_CREATE = "CREATE TABLE "+TABLE_BYU+" ("
@@ -35,8 +36,8 @@ public class ByuTable {
 			+ " "+COLUMN_SDESCRIPTION+" text NOT NULL DEFAULT 'Short Description',"
 			+ " "+COLUMN_CLOUDID+" integer NOT NULL DEFAULT '0',"
 			+ " "+COLUMN_PICTUREURL+" text NOT NULL DEFAULT 'http://aaronapps.bluemoonscience.com/photos/noimage.jpg',"
-			+ " "+COLUMN_LASTUPDATESHORT+" text NOT NULL DEFAULT 'June 2013'"
-			+ " );";
+			+ " "+COLUMN_LASTUPDATESHORT+" text NOT NULL DEFAULT 'June 2013',"
+			+ " "+COLUMN_UNIQUENEXT+" integer NOT NULL );";
 
 	public static void onCreate(SQLiteDatabase database) {
 		database.execSQL(DATABASE_CREATE);

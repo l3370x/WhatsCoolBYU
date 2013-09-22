@@ -11,13 +11,14 @@ public class Entry {
 	public String sDescription;
 	public String pictureURL;
 	public String lastUpdateShort;
+	public int uniqueNext;
 
 	public Entry() {
 
 	}
 
 	public Entry(int id, String title, float lat, float lng, double avgRating, String timestamp,
-			String sDescription, String pictureURL, String lastUpdateShort) {
+			String sDescription, String pictureURL, String lastUpdateShort,int uniqueNext) {
 		this.id = id;
 		this.title = title;
 		this.lat = lat;
@@ -27,6 +28,7 @@ public class Entry {
 		this.sDescription = sDescription;
 		this.pictureURL = pictureURL;
 		this.lastUpdateShort = lastUpdateShort;
+		this.uniqueNext = uniqueNext;
 	}
 	
 	@Override
@@ -34,6 +36,6 @@ public class Entry {
 		return "Entry [id=" + id + ", title=" + title + ", lat=" + lat + ", lng=" + lng
 				+ ", avgRating=" + avgRating + ", timestamp=" + timestamp + ", sDescription="
 				+ sDescription + ", pictureURL=" + pictureURL + ", lastUpdateShort="
-				+ lastUpdateShort + "]";
+				+ lastUpdateShort + uniqueNext + "]";
 	}
 }
